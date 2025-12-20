@@ -1,721 +1,136 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="utf-8" />
-    <title>Aerosense Dashboard</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Weather Forecast Dashboard</title>
 
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
 
-    <style>
-        :root{
-            --bg:#f5f6fa;
-            --card:#ffffff;
-            --accent:#4c4cff;
-            --muted:#6b7280;
-        }
-        *{box-sizing:border-box}
-        body{
-            margin:0;
-            font-family:Inter, "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-            background:var(--bg);
-            color:#111827;
-            -webkit-font-smoothing:antialiased;
-        }
-        .wrap{
-            display:flex;
-            gap:24px;
-            padding:24px;
-        }
-
-        /* Sidebar */
-        .sidebar{
-            width:220px;
-            background:#1e1e2f;
-            color:#fff;
-            padding:20px;
-            border-radius:12px;
-            height:calc(100vh - 48px);
-        }
-        .sidebar h2{margin:0 0 18px;font-size:18px;text-align:center}
-        .sidebar a{display:block;color:#cbd5e1;text-decoration:none;padding:10px;border-radius:8px;margin-bottom:8px}
-        .sidebar a:hover{background:#11121a;color:#fff}
-
-        /* Main content */
-        .main{
-            flex:1;
-            display:flex;
-            flex-direction:column;
-            gap:18px;
-        }
-        .top{
-            display:flex;
-            gap:18px;
-            align-items:flex-start;
-        }
-        .header{
-            font-size:22px;
-            font-weight:700;
-        }
-
-        /* cards */
-        .cards{
-            display:grid;
-            grid-template-columns:repeat(4,1fr);
-            gap:14px;
-            flex:1;
-        }
-        .card{
-            background:var(--card);
-            padding:14px;
-            border-radius:10px;
-            box-shadow:0 6px 18px rgba(13,17,28,0.06);
-        }
-        .card .k{font-size:13px;color:var(--muted);margin-bottom:8px}
-        .card .v{font-size:20px;font-weight:700;color:var(--accent)}
-
-        /* controls */
-        .controls{
-            display:flex;
-            gap:8px;
-            align-items:center;
-            margin-bottom:6px;
-        }
-        .btn{
-            background:var(--accent);
-            color:#fff;
-            padding:8px 12px;
-            border-radius:8px;
-            border:0;
-            cursor:pointer;
-            font-weight:600;
-        }
-        .btn.secondary{
-            background:#e5edf9;color:#0b2340;font-weight:600;
-        }
-        .view-tabs{
-            display:flex;
-            gap:8px;
-        }
-        .tab{
-            padding:8px 12px;border-radius:8px;background:#fff;border:1px solid #e6e9ef;cursor:pointer;
-        }
-        .tab.active{background:var(--accent);color:white;border-color:var(--accent)}
-
-        /* grid area */
-        .grid{
-            display:grid;
-            grid-template-columns: 1fr 1fr;
-            gap:18px;
-            align-items:start;
-        }
-
-        /* table */
-        .table-card{
-            background:var(--card);
-            padding:16px;border-radius:12px;box-shadow:0 6px 18px rgba(13,17,28,0.06);
-        }
-        table{
-            width:100%;
-            border-collapse:collapse;
-            font-size:14px;
-        }
-        thead th{
-            text-align:left;
-            padding:12px 10px;
-            background:#f3f4f6;
-            font-weight:700;
-        }
-        tbody td{
-            padding:12px 10px;
-            border-bottom:1px solid #f1f5f9;
-            color:#111827;
-        }
-        tbody tr:hover{background:#fbfdff}
-
-        /* chart card */
-        .chart-card{background:var(--card);padding:16px;border-radius:12px;box-shadow:0 6px 18px rgba(13,17,28,0.06);}
-
-        .legend{
-            display:flex;gap:12px;align-items:center;
-        }
-        .legend .item{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
-        .swatch{width:18px;height:8px;border-radius:4px}
-
-        /* responsive */
-        @media (max-width:1000px){
-            .grid{grid-template-columns:1fr}
-            .cards{grid-template-columns:repeat(2,1fr)}
-            .sidebar{display:none}
-            .wrap{padding:12px}
-        }
-        @media (max-width:600px){
-            .cards{grid-template-columns:1fr}
-        }
-
-        /* small helper */
-        .muted{color:var(--muted);font-size:13px}
-        .center{display:flex;justify-content:center;align-items:center}
-    </style>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body>
-    <div class="wrap">
 
-        <div class="sidebar">
-            <h2>Aerosense Dashboard</h2>
-            <a href="#">หน้าแรก</a>
-            <a href="#">รายงาน</a>
-            <a href="#">ตั้งค่า</a>
-            <hr style="border:none;height:1px;background:#2b2b3b;margin:12px 0;border-radius:1px">
-            <div class="muted">Source:</div>
-            <div style="font-size:13px;margin-top:6px">peopleiot.atwebpages.com</div>
-            <div style="font-size:12px;margin-top:10px;color:#9aa3b2">Example image</div>
-            <!-- ตัวอย่าง path ที่คุณอัปโหลดไว้ (local path ของ session) -->
-            <img src="/mnt/data/2e7b2ee6-9f00-4ccd-96d4-a58afa0a916b.png" alt="sample" style="width:100%;border-radius:8px;margin-top:8px" />
-        </div>
+<body class="bg-gray-100 text-gray-900">
 
-        <div class="main">
-            <div class="top">
-                <div style="flex:1">
-                    <div class="header">Temp & Humidity Dashboard</div>
-                    <div class="muted" style="margin-top:6px">แสดงข้อมูลจาก: <strong>http://peopleiot.atwebpages.com/AerosenseTempLog.php?page=9</strong></div>
-                </div>
+  <div class="max-w-4xl mx-auto p-6">
 
-                <div style="width:360px">
-                    <div class="controls" style="justify-content:flex-end">
-                        <div class="view-tabs" id="viewTabs">
-                            <div class="tab active" data-view="current">Current</div>
-                            <div class="tab" data-view="hourly">Hourly</div>
-                            <div class="tab" data-view="weekly">Weekly</div>
-                        </div>
-                        <button class="btn secondary" id="refreshBtn">Reload</button>
-                    </div>
-                </div>
-            </div>
+    <h1 class="text-3xl font-bold mb-6 text-center">
+      🌤 7-Day Weather Forecast (Bangkok)
+    </h1>
 
-            <div class="cards" id="cards">
-                <div class="card">
-                    <div class="k">Temperature (ล่าสุด)</div>
-                    <div class="v" id="cardTemp">-- °C</div>
-                    <div class="muted" id="cardTempTime"></div>
-                </div>
-                <div class="card">
-                    <div class="k">Humidity (ล่าสุด)</div>
-                    <div class="v" id="cardHum">-- %</div>
-                    <div class="muted" id="cardHumTime"></div>
-                </div>
-                <div class="card">
-                    <div class="k">Temp สูงสุด / ต่ำสุด (ช่วงที่โหลด)</div>
-                    <div class="v" id="cardTempRange">-- / --</div>
-                    <div class="muted" id="cardRangeNote"></div>
-                </div>
-                <div class="card">
-                    <div class="k">Rows</div>
-                    <div class="v" id="cardRows">--</div>
-                    <div class="muted">แหล่งข้อมูลหน้าเพจ</div>
-                </div>
-            </div>
+    <!-- TABLE -->
+    <div class="bg-white shadow-lg rounded-xl p-4 mb-8">
+      <h2 class="text-xl font-semibold mb-3">Forecast Table</h2>
 
-            <div class="grid">
-                <div class="table-card" id="tableCard">
-                    <h3 style="margin:0 0 10px 0">Temp & Humidity Logs</h3>
-
-                    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
-                        <div class="muted">Page:</div>
-                        <select id="pageSelect" style="padding:6px 8px;border-radius:6px;border:1px solid #e6e9ef">
-                            <!-- options created by JS -->
-                        </select>
-                        <div style="flex:1"></div>
-                        <div class="muted">Export CSV</div>
-                        <button class="btn secondary" id="exportCsvBtn">Export</button>
-                    </div>
-
-                    <div style="overflow:auto;max-height:420px">
-                        <table id="dataTable">
-                            <thead>
-                                <tr>
-                                    <th>DateTime</th>
-                                    <th>Temperature (°C)</th>
-                                    <th>Humidity (%)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- rows -->
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
-                        <button class="btn secondary" id="firstPageBtn">First</button>
-                        <button class="btn secondary" id="prevPageBtn">Prev</button>
-                        <button class="btn secondary" id="nextPageBtn">Next</button>
-                        <button class="btn secondary" id="lastPageBtn">Last</button>
-                    </div>
-                </div>
-
-                <div class="chart-card">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-                        <div class="legend">
-                            <div class="item"><span class="swatch" style="background:#ef4444"></span>Temperature (°C)</div>
-                            <div class="item"><span class="swatch" style="background:#2563eb"></span>Humidity (%)</div>
-                        </div>
-                        <div class="muted" id="chartNote">View: Current</div>
-                    </div>
-
-                    <canvas id="lineChart" height="260"></canvas>
-                </div>
-            </div>
-        </div>
-
+      <div class="overflow-x-auto">
+        <table id="temperatureTable" class="w-full text-center border border-gray-300 rounded-lg">
+          <thead class="bg-blue-600 text-white">
+            <tr>
+              <th class="py-2 px-4 border">Date</th>
+              <th class="py-2 px-4 border">Max Temp (°C)</th>
+              <th class="py-2 px-4 border">Rain (mm)</th>
+              <th class="py-2 px-4 border">UV Index</th>
+              <th class="py-2 px-4 border">Humidity (%)</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white"></tbody>
+        </table>
+      </div>
     </div>
 
-<script>
-/*
-  Dashboard script:
-  - Fetch HTML from target URL (page param configurable)
-  - Parse table that contains "DateTime" header
-  - Extract rows: DateTime, Temperature, Humidity
-  - Provide Current / Hourly / Weekly views
-  - Export CSV
-  - NOTE: if CORS blocks, use a proxy or run locally (Live Server).
-*/
+    <!-- CHART -->
+    <div class="bg-white shadow-lg rounded-xl p-4">
+      <h2 class="text-xl font-semibold mb-3">Temperature Chart</h2>
+      <canvas id="myChart" height="120"></canvas>
+    </div>
 
-const BASE_URL = 'http://peopleiot.atwebpages.com/AerosenseTempLog.php';
-const DEFAULT_PAGE = 9;
+  </div>
 
-// If CORS blocks, you can try a CORS proxy (uncomment to use)
-// const CORS_PROXY = 'https://cors.bridged.cc/'; // or 'https://api.allorigins.win/raw?url='
-// const USE_PROXY = true;
-const USE_PROXY = false;
-const CORS_PROXY = '';
+  <!-- SCRIPT -->
+  <script>
+    const API_URL =
+      "https://api.open-meteo.com/v1/forecast?latitude=13.75&longitude=100.5&daily=temperature_2m_max,rain_sum,uv_index_max&hourly=relative_humidity_2m&timezone=Asia/Bangkok";
 
-let currentPage = DEFAULT_PAGE;
-let totalPages = 12; // guess; we'll adapt if not known
-let rawRows = []; // array of {datetime:Date, datetimeStr, temp:float, hum:float}
+    let chartInstance = null;
 
-const pageSelect = document.getElementById('pageSelect');
-const dataTableBody = document.querySelector('#dataTable tbody');
-const cardTemp = document.getElementById('cardTemp');
-const cardHum = document.getElementById('cardHum');
-const cardTempTime = document.getElementById('cardTempTime');
-const cardHumTime = document.getElementById('cardHumTime');
-const cardTempRange = document.getElementById('cardTempRange');
-const cardRows = document.getElementById('cardRows');
-const chartNote = document.getElementById('chartNote');
-const viewTabs = document.getElementById('viewTabs');
-const exportCsvBtn = document.getElementById('exportCsvBtn');
+    async function loadWeather() {
+      const res = await fetch(API_URL);
+      const data = await res.json();
 
-const firstPageBtn = document.getElementById('firstPageBtn');
-const prevPageBtn = document.getElementById('prevPageBtn');
-const nextPageBtn = document.getElementById('nextPageBtn');
-const lastPageBtn = document.getElementById('lastPageBtn');
-const refreshBtn = document.getElementById('refreshBtn');
+      const dates = data.daily.time;
+      const temps = data.daily.temperature_2m_max;
+      const rain = data.daily.rain_sum;
+      const uv = data.daily.uv_index_max;
 
-let currentView = 'current'; // current | hourly | weekly
+      const hourlyTimes = data.hourly.time;
+      const hourlyHumidity = data.hourly.relative_humidity_2m;
 
-// chart
-let chartInstance = null;
-const ctx = document.getElementById('lineChart').getContext('2d');
+      // ===== คำนวณ Humidity เฉลี่ยรายวัน =====
+      const humidityByDate = {};
 
-function createPageOptions(maxPages=12){
-    pageSelect.innerHTML = '';
-    for(let p=1;p<=maxPages;p++){
-        const opt = document.createElement('option');
-        opt.value = p;
-        opt.innerText = p;
-        if(p===currentPage) opt.selected = true;
-        pageSelect.appendChild(opt);
-    }
-}
-
-pageSelect.addEventListener('change', (e)=>{
-    currentPage = parseInt(e.target.value);
-    loadAndRender();
-});
-
-firstPageBtn.addEventListener('click', ()=>{ currentPage=1; pageSelect.value=1; loadAndRender(); });
-prevPageBtn.addEventListener('click', ()=>{ if(currentPage>1) currentPage--; pageSelect.value=currentPage; loadAndRender(); });
-nextPageBtn.addEventListener('click', ()=>{ currentPage++; pageSelect.value=currentPage; loadAndRender(); });
-lastPageBtn.addEventListener('click', ()=>{ currentPage = totalPages; pageSelect.value=currentPage; loadAndRender(); });
-
-refreshBtn.addEventListener('click', ()=> loadAndRender());
-
-viewTabs.addEventListener('click', (e)=>{
-    const t = e.target;
-    if(!t.classList.contains('tab')) return;
-    Array.from(viewTabs.children).forEach(c=>c.classList.remove('active'));
-    t.classList.add('active');
-    currentView = t.dataset.view;
-    renderAllViews(); // re-render chart/table based on view
-});
-
-exportCsvBtn.addEventListener('click', exportCsv);
-
-// initial page options (we'll adjust later if needed)
-createPageOptions(12);
-
-// helper: fetch HTML text
-async function fetchHtml(url){
-    const fetchUrl = USE_PROXY ? (CORS_PROXY + url) : url;
-    const res = await fetch(fetchUrl);
-    if(!res.ok) throw new Error('Fetch failed: ' + res.status);
-    const text = await res.text();
-    return text;
-}
-
-// parse HTML and extract table rows (robust)
-function parseHtmlToRows(html){
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-
-    // find table which has header containing "DateTime" or "Date Time"
-    const tables = Array.from(doc.querySelectorAll('table'));
-    let targetTable = null;
-    for(const t of tables){
-        const headerText = (t.querySelector('thead')?.innerText || t.innerText || '').toLowerCase();
-        if(headerText.includes('datetime') || headerText.includes('date time') || headerText.includes('date')){
-            targetTable = t;
-            break;
+      hourlyTimes.forEach((time, i) => {
+        const date = time.split("T")[0];
+        if (!humidityByDate[date]) {
+          humidityByDate[date] = [];
         }
-    }
-    if(!targetTable){
-        // fallback: pick first table
-        targetTable = tables[0];
-    }
-    if(!targetTable) return [];
+        humidityByDate[date].push(hourlyHumidity[i]);
+      });
 
-    const rows = Array.from(targetTable.querySelectorAll('tbody tr'));
-    const out = [];
-    for(const r of rows){
-        const cols = Array.from(r.querySelectorAll('td'));
-        if(cols.length < 2) continue;
-        // Sample in your screenshot: DateTime | Temperature | Humidity
-        // try to map by text content pattern:
-        let dtText = cols[0].innerText.trim();
-        let tempText = cols[1].innerText.trim();
-        let humText = cols[2] ? cols[2].innerText.trim() : '';
+      const humidityDaily = dates.map(date => {
+        const values = humidityByDate[date];
+        if (!values) return "-";
+        const avg = values.reduce((a, b) => a + b, 0) / values.length;
+        return avg.toFixed(1);
+      });
 
-        // If table layout different (some pages include index column), attempt find best match:
-        if(!isDateString(dtText)){
-            // try to find date-like cell
-            const maybeDate = cols.find(c => isDateString(c.innerText.trim()));
-            if(maybeDate) {
-                dtText = maybeDate.innerText.trim();
-                // assign others
-                const i = cols.indexOf(maybeDate);
-                tempText = cols[i+1] ? cols[i+1].innerText.trim() : tempText;
-                humText = cols[i+2] ? cols[i+2].innerText.trim() : humText;
-            }
-        }
+      // ===== ใส่ข้อมูลลงตาราง =====
+      const tbody = document.querySelector("#temperatureTable tbody");
+      tbody.innerHTML = "";
 
-        // parse values
-        const dt = parseDateTime(dtText);
-        const temp = parseFloatOrNull(tempText);
-        const hum = parseFloatOrNull(humText);
+      dates.forEach((date, i) => {
+        tbody.innerHTML += `
+          <tr class="border-b hover:bg-gray-100">
+            <td class="py-2 px-3">${date}</td>
+            <td class="py-2 px-3">${temps[i]} °C</td>
+            <td class="py-2 px-3">${rain[i]} mm</td>
+            <td class="py-2 px-3">${uv[i]}</td>
+            <td class="py-2 px-3">${humidityDaily[i]} %</td>
+          </tr>
+        `;
+      });
 
-        if(dt && (temp !== null || hum !== null)){
-            out.push({
-                datetimeStr: dtText,
-                datetime: dt,
-                temp: temp,
-                hum: hum
-            });
-        }
+      drawChart(dates, temps);
     }
 
-    return out;
-}
+    function drawChart(labels, temps) {
+      const ctx = document.getElementById("myChart");
 
-function isDateString(s){
-    if(!s) return false;
-    // look for YYYY-MM-DD or other common patterns
-    return /\d{4}-\d{2}-\d{2}/.test(s) || /\d{2}\/\d{2}\/\d{4}/.test(s) || /\d{4}\/\d{2}\/\d{2}/.test(s);
-}
+      if (chartInstance) chartInstance.destroy();
 
-function parseDateTime(s){
-    if(!s) return null;
-    // try ISO-like first
-    const iso = s.replace(/\s+/, ' ').trim();
-    const d = new Date(iso);
-    if(!isNaN(d.getTime())) return d;
-    // try replace - with / for Safari
-    const alt = s.replace(/-/g, '/');
-    const d2 = new Date(alt);
-    if(!isNaN(d2.getTime())) return d2;
-    return null;
-}
-
-function parseFloatOrNull(x){
-    if(x === undefined || x === null) return null;
-    const cleaned = x.replace(/[^\d\.\-]/g,'');
-    if(cleaned === '') return null;
-    const v = parseFloat(cleaned);
-    return isNaN(v) ? null : v;
-}
-
-// compute statistics
-function computeStats(rows){
-    if(!rows || rows.length===0) return null;
-    const temps = rows.map(r=>r.temp).filter(v=>v!==null);
-    const hums = rows.map(r=>r.hum).filter(v=>v!==null);
-    const latest = rows.slice().sort((a,b)=>b.datetime - a.datetime)[0];
-    const maxTemp = temps.length? Math.max(...temps): null;
-    const minTemp = temps.length? Math.min(...temps): null;
-    return {latest, maxTemp, minTemp, count: rows.length};
-}
-
-// render table
-function renderTable(rows){
-    dataTableBody.innerHTML = '';
-    const sorted = rows.slice().sort((a,b)=> b.datetime - a.datetime); // newest first
-    for(const r of sorted){
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${escapeHtml(r.datetimeStr)}</td>
-                        <td>${r.temp===null ? '-' : r.temp.toFixed(2)}</td>
-                        <td>${r.hum===null ? '-' : r.hum.toFixed(2)}</td>`;
-        dataTableBody.appendChild(tr);
-    }
-}
-
-// safe escape
-function escapeHtml(s){
-    return (s+'').replace(/[&<>"']/g, function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});
-}
-
-// render cards
-function renderCards(rows){
-    const s = computeStats(rows);
-    if(!s){ cardTemp.innerText='--'; cardHum.innerText='--'; cardRows.innerText='0'; cardTempRange.innerText='-- / --'; return; }
-    cardRows.innerText = s.count;
-    if(s.latest){
-        if(s.latest.temp !== null) cardTemp.innerText = s.latest.temp.toFixed(2) + ' °C';
-        else cardTemp.innerText = '--';
-        if(s.latest.hum !== null) cardHum.innerText = s.latest.hum.toFixed(2) + ' %';
-        else cardHum.innerText = '--';
-        cardTempTime.innerText = s.latest.datetimeStr;
-        cardHumTime.innerText = s.latest.datetimeStr;
-    }
-    if(s.maxTemp !== null && s.minTemp !== null){
-        cardTempRange.innerText = s.maxTemp.toFixed(2) + ' / ' + s.minTemp.toFixed(2);
-    } else {
-        cardTempRange.innerText = '-- / --';
-    }
-}
-
-// prepare datasets for chart based on view
-function prepareChartData(rows, view='current'){
-    const sorted = rows.slice().sort((a,b)=> a.datetime - b.datetime); // oldest->newest
-    if(view === 'current'){
-        // use raw rows (limit to last 50)
-        const recent = sorted.slice(-50);
-        return {
-            labels: recent.map(r=> formatLabel(r.datetime)),
-            temps: recent.map(r=> r.temp),
-            hums: recent.map(r=> r.hum)
-        };
-    } else if(view === 'hourly'){
-        // group by hour (last 24 hours)
-        const map = new Map();
-        const now = new Date();
-        for(const r of sorted){
-            const d = r.datetime;
-            // only last 48 hours to be safe
-            if((now - d) > (1000*60*60*48)) continue;
-            const key = d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()+' '+d.getHours();
-            if(!map.has(key)) map.set(key, {temps:[], hums:[], label: key});
-            const entry = map.get(key);
-            if(r.temp !== null) entry.temps.push(r.temp);
-            if(r.hum !== null) entry.hums.push(r.hum);
-        }
-        const items = Array.from(map.values()).sort((a,b)=> new Date(a.label) - new Date(b.label));
-        const labels = items.map(it=> it.label);
-        const temps = items.map(it=> averageOrNull(it.temps));
-        const hums = items.map(it=> averageOrNull(it.hums));
-        return {labels, temps, hums};
-    } else if(view === 'weekly'){
-        // group by date (daily average)
-        const map = new Map();
-        for(const r of sorted){
-            const d = r.datetime;
-            const key = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
-            if(!map.has(key)) map.set(key, {temps:[], hums:[], label:key});
-            const entry = map.get(key);
-            if(r.temp !== null) entry.temps.push(r.temp);
-            if(r.hum !== null) entry.hums.push(r.hum);
-        }
-        const items = Array.from(map.values()).sort((a,b)=> new Date(a.label) - new Date(b.label));
-        const labels = items.map(it=> it.label);
-        const temps = items.map(it=> averageOrNull(it.temps));
-        const hums = items.map(it=> averageOrNull(it.hums));
-        return {labels, temps, hums};
-    }
-    return {labels:[], temps:[], hums:[]};
-}
-
-function pad(n){ return n<10? '0'+n : n; }
-function averageOrNull(arr){ if(!arr || arr.length===0) return null; return arr.reduce((a,b)=>a+b,0)/arr.length; }
-function formatLabel(dt){
-    // short datetime label
-    return dt.getFullYear() + '-' + pad(dt.getMonth()+1) + '-' + pad(dt.getDate()) + ' ' + pad(dt.getHours())+':'+pad(dt.getMinutes())+':'+pad(dt.getSeconds());
-}
-
-// render chart
-function renderChart(data, view){
-    chartNote.innerText = 'View: ' + (view.charAt(0).toUpperCase() + view.slice(1));
-    const labels = data.labels;
-    const temps = data.temps.map(v => v===null ? null : Number(v.toFixed ? v.toFixed(2) : v));
-    const hums = data.hums.map(v => v===null ? null : Number(v.toFixed ? v.toFixed(2) : v));
-
-    if(chartInstance) chartInstance.destroy();
-    chartInstance = new Chart(ctx, {
-        type: 'line',
+      chartInstance = new Chart(ctx, {
+        type: "line",
         data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Temperature (°C)',
-                    data: temps,
-                    borderColor: '#ef4444',
-                    backgroundColor: 'rgba(239,68,68,0.06)',
-                    yAxisID: 'y',
-                    tension: 0.2,
-                    spanGaps: true,
-                    pointRadius:3,
-                },
-                {
-                    label: 'Humidity (%)',
-                    data: hums,
-                    borderColor: '#2563eb',
-                    backgroundColor: 'rgba(37,99,235,0.06)',
-                    yAxisID: 'y1',
-                    tension: 0.2,
-                    spanGaps: true,
-                    pointRadius:3,
-                }
-            ]
+          labels,
+          datasets: [{
+            label: "Max Temperature (°C)",
+            data: temps,
+            borderWidth: 2,
+            tension: 0.4
+          }]
         },
         options: {
-            responsive: true,
-            interaction: {mode:'index', intersect:false},
-            stacked:false,
-            scales: {
-                x: {
-                    ticks: {maxRotation:45, minRotation:25, autoSkip:true, maxTicksLimit:12}
-                },
-                y: {
-                    type: 'linear',
-                    display: true,
-                    position: 'left',
-                    title: {display:true, text: 'Temp (°C)'}
-                },
-                y1: {
-                    type: 'linear',
-                    display: true,
-                    position: 'right',
-                    grid: {drawOnChartArea:false},
-                    title: {display:true, text: 'Humidity (%)'}
-                }
-            },
-            plugins: {
-                legend: {display:true, position:'top'}
-            }
+          responsive: true,
+          scales: {
+            y: { beginAtZero: false }
+          }
         }
-    });
-}
-
-// render both table/cards/chart based on currentView
-function renderAllViews(){
-    renderTable(rawRows);
-    renderCards(rawRows);
-
-    const data = prepareChartData(rawRows, currentView);
-    // if data empty -> show message in chart
-    if((!data.labels || data.labels.length===0) && rawRows.length===0){
-        // nothing
-        if(chartInstance) chartInstance.destroy();
-        ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height);
-        chartNote.innerText = 'No data to display';
-        return;
-    }
-    // if view has no aggregated data -> hide chart note
-    if((!data.labels || data.labels.length===0)){
-        chartNote.innerText = 'No data for this view';
-        if(chartInstance) chartInstance.destroy();
-        ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height);
-        return;
+      });
     }
 
-    renderChart(data, currentView);
-}
+    window.onload = loadWeather;
+  </script>
 
-// main loader
-async function loadAndRender(){
-    try{
-        const url = `${BASE_URL}?page=${currentPage}`;
-        document.querySelector('.header').innerText = `Temp & Humidity Dashboard (page ${currentPage})`;
-        document.getElementById('chartNote').innerText = 'Loading...';
-        // fetch
-        const html = await fetchHtml(url);
-        const rows = parseHtmlToRows(html);
-
-        // if no rows found, perhaps page count is different. Try to detect total pages from pagination on source
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        const pagination = doc.querySelectorAll('a');
-        // attempt guess total pages by links with ?page=
-        let maxP = totalPages;
-        Array.from(pagination).forEach(a=>{
-            const href = a.getAttribute('href')||'';
-            const m = href.match(/page=(\d+)/);
-            if(m){
-                const n = parseInt(m[1]);
-                if(n>maxP) maxP = n;
-            }
-        });
-        totalPages = Math.max(maxP, totalPages);
-        createPageOptions(totalPages);
-        pageSelect.value = currentPage;
-
-        rawRows = rows.slice(); // store
-        renderAllViews();
-    }catch(err){
-        console.error(err);
-        alert('Error loading data: ' + err.message + '\nถ้าเห็น CORS error ให้รันไฟล์นี้บนเครื่อง (Live Server) หรือเปิด proxy CORS ในสคริปต์)');
-        document.getElementById('chartNote').innerText = 'Error loading data';
-    }
-}
-
-// CSV export
-function exportCsv(){
-    if(!rawRows || rawRows.length===0){
-        alert('No data to export');
-        return;
-    }
-    const rows = rawRows.slice().sort((a,b)=> b.datetime - a.datetime);
-    let csv = 'DateTime,Temperature,Humidity\n';
-    for(const r of rows){
-        csv += `"${r.datetimeStr}",${r.temp===null ? '' : r.temp},${r.hum===null ? '' : r.hum}\n`;
-    }
-    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `aerosense_page${currentPage}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-}
-
-// helper startup
-(function init(){
-    // attach export handler
-    exportCsvBtn.disabled = false;
-    // try to parse initial page number from DEFAULT_PAGE
-    pageSelect.value = currentPage;
-    loadAndRender();
-})();
-
-</script>
 </body>
 </html>
-
