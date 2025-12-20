@@ -1,183 +1,127 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IoT Dashboard</title>
+// ==============================
+// WEATHER API (Bangkok 7-day forecast)
+// ==============================
+const WEATHER_API =
+    "https://api.open-meteo.com/v1/forecast" +
+    "?latitude=13.75&longitude=100.50" +
+    "&daily=temperature_2m_max,rain_sum,uv_index_max,shortwave_radiation_sum" +
+    "&timezone=Asia/Bangkok";
 
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+// ==============================
+// AIR QUALITY API (PM2.5 forecast)
+// ==============================
+const AIR_API =
+    "https://air-quality-api.open-meteo.com/v1/air-quality" +
+    "?latitude=13.75&longitude=100.50" +
+    "&hourly=pm2_5" +
+    "&timezone=Asia/Bangkok";
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+let chartInstance = null;
 
-<style>
-    body {
-        margin: 0;
-        font-family: 'Poppins', sans-serif;
-        background: #f5f6fa;
-        display: flex;
-    }
+// ==============================
+// LOAD FORECAST + INSERT TO TABLE
+// ==============================
+async function loadWeatherForecast() {
+    try {
+        // ดึงข้อมูลพร้อมกัน
+        const [weatherRes, airRes] = await Promise.all([
+            fetch(WEATHER_API),
+            fetch(AIR_API)
+        ]);
 
-    /* ===== Sidebar ===== */
-    .sidebar {
-        width: 250px;
-        background: #1e1e2f;
-        height: 100vh;
-        position: fixed;
-        padding: 20px;
-        color: white;
-    }
+        const weatherData = await weatherRes.json();
+        const airData = await airRes.json();
 
-    .sidebar h2 {
-        margin-top: 0;
-        margin-bottom: 30px;
-        font-size: 22px;
-        text-align: center;
-    }
+        const dates = weatherData.daily.time;
+        const temps = weatherData.daily.temperature_2m_max;
+        const rains = weatherData.daily.rain_sum;
+        const uv = weatherData.daily.uv_index_max;
+        const sunlight = weatherData.daily.shortwave_radiation_sum;
 
-    .sidebar a {
-        display: block;
-        padding: 12px;
-        margin-bottom: 10px;
-        border-radius: 8px;
-        text-decoration: none;
-        color: #ccc;
-        transition: 0.3s;
-    }
-    .sidebar a:hover {
-        background: #4c4cff;
-        color: white;
-    }
+        // ==============================
+        // คำนวณ PM2.5 รายวัน (เฉลี่ยจากรายชั่วโมง)
+        // ==============================
+        const pm25Daily = {};
+        airData.hourly.time.forEach((t, i) => {
+            const day = t.split("T")[0];
+            if (!pm25Daily[day]) pm25Daily[day] = [];
+            pm25Daily[day].push(airData.hourly.pm2_5[i]);
+        });
 
-    /* ===== Main Content ===== */
-    .content {
-        margin-left: 250px;
-        padding: 25px;
-        width: 100%;
-    }
+        const pm25Avg = dates.map(d => {
+            const arr = pm25Daily[d];
+            if (!arr) return "-";
+            const avg = arr.reduce((a, b) => a + b, 0) / arr.length;
+            return avg.toFixed(1);
+        });
 
-    .header {
-        font-size: 28px;
-        font-weight: 600;
-        margin-bottom: 25px;
-    }
+        const tbody = document
+            .getElementById("temperatureTable")
+            .getElementsByTagName("tbody")[0];
 
-    /* ===== Cards ===== */
-    .cards {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 20px;
-        margin-bottom: 25px;
-    }
+        tbody.innerHTML = "";
 
-    .card {
-        background: white;
-        padding: 20px;
-        border-radius: 15px;
-        box-shadow: 0px 3px 10px rgba(0,0,0,0.1);
-    }
-
-    .card h3 {
-        margin: 0;
-        font-size: 20px;
-        font-weight: 500;
-    }
-
-    .card .value {
-        font-size: 36px;
-        margin-top: 10px;
-        font-weight: 600;
-        color: #4c4cff;
-    }
-
-    /* ===== Table + Chart ===== */
-    .grid-2 {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 25px;
-    }
-
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        background: white;
-        border-radius: 10px;
-        overflow: hidden;
-    }
-
-    th, td {
-        padding: 12px;
-        border-bottom: 1px solid #eee;
-        text-align: center;
-    }
-
-    th {
-        background: #f0f0f0;
-    }
-
-    tr:hover {
-        background: #f9f9f9;
-    }
-
-</style>
-</head>
-
-<body>
-
-<!-- Sidebar -->
-<div class="sidebar">
-    <h2>IoT Dashboard</h2>
-    <a href="#">📊 Dashboard</a>
-    <a href="#">📁 Logs</a>
-    <a href="#">⚙ Settings</a>
-</div>
-
-<!-- Main Content -->
-<div class="content">
-    <div class="header">📊 IoT Monitoring Dashboard</div>
-
-    <!-- Summary Cards -->
-    <div class="cards">
-        <div class="card">
-            <h3>Temperature</h3>
-            <div class="value" id="tempValue">27°C</div>
-        </div>
-        <div class="card">
-            <h3>Humidity</h3>
-            <div class="value" id="humValue">60%</div>
-        </div>
-        <div class="card">
-            <h3>Fan Status</h3>
-            <div class="value" id="fanValue">Off</div>
-        </div>
-    </div>
-
-    <!-- Table + Chart -->
-    <div class="grid-2">
-        <!-- Table -->
-        <table id="dataTable">
-            <thead>
-                <tr>
-                    <th>Datetime</th>
-                    <th>Temp (°C)</th>
-                    <th>Humidity (%)</th>
-                    <th>Fan</th>
+        for (let i = 0; i < dates.length; i++) {
+            const row = `
+                <tr class="hover:bg-gray-100">
+                    <td class="py-2 px-4 border">${dates[i]}</td>
+                    <td class="py-2 px-4 border">${temps[i]} °C</td>
+                    <td class="py-2 px-4 border">${rains[i]} mm</td>
+                    <td class="py-2 px-4 border">${uv[i]}</td>
+                    <td class="py-2 px-4 border">${sunlight[i]} MJ/m²</td>
+                    <td class="py-2 px-4 border">${pm25Avg[i]}</td>
                 </tr>
-            </thead>
-            <tbody>
-                <tr><td>2025-06-16 12:40</td><td>27</td><td>26</td><td>Off</td></tr>
-                <tr><td>2025-06-16 12:35</td><td>27</td><td>26</td><td>Off</td></tr>
-                <tr><td>2025-06-16 12:30</td><td>26</td><td>28</td><td>Off</td></tr>
-                <tr><td>2025-06-16 12:25</td><td>26</td><td>28</td><td>Off</td></tr>
-            </tbody>
-        </table>
+            `;
+            tbody.innerHTML += row;
+        }
 
-        <!-- Chart -->
-        <canvas id="myChart"></canvas>
-    </div>
-</div>
+        drawLineChart(dates, temps);
 
-<script src="main.js"></script>
+    } catch (error) {
+        console.error("Error loading forecast:", error);
+    }
+}
 
-</body>
-</html>
+// ==============================
+// DRAW CHART
+// ==============================
+function drawLineChart(dates, temps) {
+    const ctx = document.getElementById("myChart").getContext("2d");
 
+    if (chartInstance) chartInstance.destroy();
+
+    chartInstance = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: dates,
+            datasets: [{
+                label: "Max Temperature (°C)",
+                data: temps,
+                borderColor: "#ef4444",
+                backgroundColor: "rgba(239,68,68,0.2)",
+                borderWidth: 2,
+                fill: true,
+                tension: 0.35,
+                pointRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    title: { display: true, text: "Temperature (°C)" }
+                },
+                x: {
+                    title: { display: true, text: "Date" }
+                }
+            }
+        }
+    });
+}
+
+// ==============================
+// ON PAGE LOAD
+// ==============================
+window.onload = function () {
+    loadWeatherForecast();
+};
